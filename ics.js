@@ -214,7 +214,7 @@ var ics = function (uidDomain, prodId) {
         "DTEND;VALUE=DATE-TIME:" + end,
         "LOCATION:" + location,
         "SUMMARY;LANGUAGE=en-us:" + subject,
-        "TRANSP:TRANSPARENT",
+        "TRANSP:TRANSPARENT"
       ];
 
       if (custom_fields) {
@@ -226,10 +226,6 @@ var ics = function (uidDomain, prodId) {
       }
 
       calendarEvent.push("END:VEVENT");
-
-      if (rruleString) {
-        calendarEvent.splice(4, 0, rruleString);
-      }
 
       calendarEvent = calendarEvent.join(SEPARATOR);
 
