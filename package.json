@@ -1,24 +1,15 @@
 {
   "name": "ics.js",
-  "version": "0.1.3",
-  "description": "A browser firendly .ics/.vcs file generator written entirely in javascript",
+  "version": "2.0.0",
+  "description": "A browser friendly .ics/.vcs file generator written entirely in javascript",
   "main": "ics.js",
   "dependencies": {
-    "bower": "~1.2.8",
-    "file-saver": "^1.3.3",
-    "grunt": "~0.4.2",
-    "grunt-contrib-concat": "~0.3.0",
-    "grunt-contrib-jshint": "~0.7.2",
-    "grunt-contrib-uglify": "~0.2.7",
-    "grunt-mocha": "~0.4.6"
+    "moment": "^2.29.1"
   },
-  "devDependencies": {},
-  "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
-  },
+  "scripts": {},
   "repository": {
     "type": "git",
-    "url": "https://github.com/nwcell/ics.js.git"
+    "url": "https://github.com/jamesbrond/ics.js"
   },
   "keywords": [
     "ics",
@@ -27,10 +18,16 @@
   ],
   "contributors": [
     "Travis Krause <travis@codeforemen.com>",
-    "Kyle Hornberg <kyle.hornberg@gmail.com>"
+    "Kyle Hornberg <kyle.hornberg@gmail.com>",
+    "Diego Brondo <jamesbrond@gmail.com>"
   ],
   "license": "MIT",
   "bugs": {
-    "url": "https://github.com/nwcell/ics.js/issues"
+    "url": "https://github.com/jamesbrond/ics.js/issues"
+  },
+  "devDependencies": {
+    "grunt": "^1.4.1",
+    "grunt-contrib-concat": "^1.0.1",
+    "grunt-contrib-uglify": "^5.0.1"
   }
 }

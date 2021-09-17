@@ -1,240 +1,194 @@
-/* global saveAs, Blob, BlobBuilder, console */
-/* exported ics */
+var ics = function (uidDomain, prodId) {
+  const SEPARATOR = "\n";
+  const BYDAY_VALUES = ["SU", "MO", "TU", "WE", "TH", "FR", "SA"];
+  const RRULE_FREQ = ["YEARLY", "MONTHLY", "WEEKLY", "DAILY"];
 
-var ics = function(uidDomain, prodId) {
-  'use strict';
+  this.uidDomain = uidDomain ?? "default";
+  this.prodId = prodId ?? "Calendar";
 
-  if (navigator.userAgent.indexOf('MSIE') > -1 && navigator.userAgent.indexOf('MSIE 10') == -1) {
-    console.log('Unsupported Browser');
-    return;
-  }
+  this.calendarEvents = [];
+  this.calendarStart = ["BEGIN:VCALENDAR", `PRODID:${this.prodId}`, "VERSION:2.0"].join(SEPARATOR);
+  this.calendarEnd = 'END:VCALENDAR';
 
-  if (typeof uidDomain === 'undefined') { uidDomain = 'default'; }
-  if (typeof prodId === 'undefined') { prodId = 'Calendar'; }
-
-  var SEPARATOR = (navigator.appVersion.indexOf('Win') !== -1) ? '\r\n' : '\n';
-  var calendarEvents = [];
-  var calendarStart = [
-    'BEGIN:VCALENDAR',
-    'PRODID:' + prodId,
-    'VERSION:2.0'
-  ].join(SEPARATOR);
-  var calendarEnd = SEPARATOR + 'END:VCALENDAR';
-  var BYDAY_VALUES = ['SU', 'MO', 'TU', 'WE', 'TH', 'FR', 'SA'];
-
-  return {
-    /**
-     * Returns events array
-     * @return {array} Events
-     */
-    'events': function() {
-      return calendarEvents;
-    },
-
-    /**
-     * Returns calendar
-     * @return {string} Calendar in iCalendar format
-     */
-    'calendar': function() {
-      return calendarStart + SEPARATOR + calendarEvents.join(SEPARATOR) + calendarEnd;
-    },
-
-    /**
-     * Add event to the calendar
-     * @param  {string} subject     Subject/Title of event
-     * @param  {string} description Description of event
-     * @param  {string} location    Location of event
-     * @param  {string} begin       Beginning date of event
-     * @param  {string} stop        Ending date of event
-     */
-    'addEvent': function(subject, description, location, begin, stop, rrule) {
-      // I'm not in the mood to make these optional... So they are all required
-      if (typeof subject === 'undefined' ||
-        typeof description === 'undefined' ||
-        typeof location === 'undefined' ||
-        typeof begin === 'undefined' ||
-        typeof stop === 'undefined'
-      ) {
-        return false;
-      }
-
-      // validate rrule
-      if (rrule) {
-        if (!rrule.rrule) {
-          if (rrule.freq !== 'YEARLY' && rrule.freq !== 'MONTHLY' && rrule.freq !== 'WEEKLY' && rrule.freq !== 'DAILY') {
-            throw "Recurrence rrule frequency must be provided and be one of the following: 'YEARLY', 'MONTHLY', 'WEEKLY', or 'DAILY'";
-          }
-
-          if (rrule.until) {
-            if (isNaN(Date.parse(rrule.until))) {
-              throw "Recurrence rrule 'until' must be a valid date string";
-            }
-          }
-
-          if (rrule.interval) {
-            if (isNaN(parseInt(rrule.interval))) {
-              throw "Recurrence rrule 'interval' must be an integer";
-            }
-          }
-
-          if (rrule.count) {
-            if (isNaN(parseInt(rrule.count))) {
-              throw "Recurrence rrule 'count' must be an integer";
-            }
-          }
-
-          if (typeof rrule.byday !== 'undefined') {
-            if ((Object.prototype.toString.call(rrule.byday) !== '[object Array]')) {
-              throw "Recurrence rrule 'byday' must be an array";
-            }
-
-            if (rrule.byday.length > 7) {
-              throw "Recurrence rrule 'byday' array must not be longer than the 7 days in a week";
-            }
-
-            // Filter any possible repeats
-            rrule.byday = rrule.byday.filter(function(elem, pos) {
-              return rrule.byday.indexOf(elem) == pos;
-            });
-
-            for (var d in rrule.byday) {
-              if (BYDAY_VALUES.indexOf(rrule.byday[d]) < 0) {
-                throw "Recurrence rrule 'byday' values must include only the following: 'SU', 'MO', 'TU', 'WE', 'TH', 'FR', 'SA'";
-              }
-            }
-          }
-        }
-      }
-
-      //TODO add time and time zone? use moment to format?
-      var start_date = new Date(begin);
-      var end_date = new Date(stop);
-      var now_date = new Date();
-
-      var start_year = ("0000" + (start_date.getFullYear().toString())).slice(-4);
-      var start_month = ("00" + ((start_date.getMonth() + 1).toString())).slice(-2);
-      var start_day = ("00" + ((start_date.getDate()).toString())).slice(-2);
-      var start_hours = ("00" + (start_date.getHours().toString())).slice(-2);
-      var start_minutes = ("00" + (start_date.getMinutes().toString())).slice(-2);
-      var start_seconds = ("00" + (start_date.getSeconds().toString())).slice(-2);
-
-      var end_year = ("0000" + (end_date.getFullYear().toString())).slice(-4);
-      var end_month = ("00" + ((end_date.getMonth() + 1).toString())).slice(-2);
-      var end_day = ("00" + ((end_date.getDate()).toString())).slice(-2);
-      var end_hours = ("00" + (end_date.getHours().toString())).slice(-2);
-      var end_minutes = ("00" + (end_date.getMinutes().toString())).slice(-2);
-      var end_seconds = ("00" + (end_date.getSeconds().toString())).slice(-2);
-
-      var now_year = ("0000" + (now_date.getFullYear().toString())).slice(-4);
-      var now_month = ("00" + ((now_date.getMonth() + 1).toString())).slice(-2);
-      var now_day = ("00" + ((now_date.getDate()).toString())).slice(-2);
-      var now_hours = ("00" + (now_date.getHours().toString())).slice(-2);
-      var now_minutes = ("00" + (now_date.getMinutes().toString())).slice(-2);
-      var now_seconds = ("00" + (now_date.getSeconds().toString())).slice(-2);
-
-      // Since some calendars don't add 0 second events, we need to remove time if there is none...
-      var start_time = '';
-      var end_time = '';
-      if (start_hours + start_minutes + start_seconds + end_hours + end_minutes + end_seconds != 0) {
-        start_time = 'T' + start_hours + start_minutes + start_seconds;
-        end_time = 'T' + end_hours + end_minutes + end_seconds;
-      }
-      var now_time = 'T' + now_hours + now_minutes + now_seconds;
-
-      var start = start_year + start_month + start_day + start_time;
-      var end = end_year + end_month + end_day + end_time;
-      var now = now_year + now_month + now_day + now_time;
-
-      // recurrence rrule vars
-      var rruleString;
-      if (rrule) {
-        if (rrule.rrule) {
-          rruleString = rrule.rrule;
-        } else {
-          rruleString = 'rrule:FREQ=' + rrule.freq;
-
-          if (rrule.until) {
-            var uDate = new Date(Date.parse(rrule.until)).toISOString();
-            rruleString += ';UNTIL=' + uDate.substring(0, uDate.length - 13).replace(/[-]/g, '') + '000000Z';
-          }
-
-          if (rrule.interval) {
-            rruleString += ';INTERVAL=' + rrule.interval;
-          }
-
-          if (rrule.count) {
-            rruleString += ';COUNT=' + rrule.count;
-          }
-
-          if (rrule.byday && rrule.byday.length > 0) {
-            rruleString += ';BYDAY=' + rrule.byday.join(',');
-          }
-        }
-      }
-
-      var stamp = new Date().toISOString();
-
-      var calendarEvent = [
-        'BEGIN:VEVENT',
-        'UID:' + calendarEvents.length + "@" + uidDomain,
-        'CLASS:PUBLIC',
-        'DESCRIPTION:' + description,
-        'DTSTAMP;VALUE=DATE-TIME:' + now,
-        'DTSTART;VALUE=DATE-TIME:' + start,
-        'DTEND;VALUE=DATE-TIME:' + end,
-        'LOCATION:' + location,
-        'SUMMARY;LANGUAGE=en-us:' + subject,
-        'TRANSP:TRANSPARENT',
-        'END:VEVENT'
-      ];
-
-      if (rruleString) {
-        calendarEvent.splice(4, 0, rruleString);
-      }
-
-      calendarEvent = calendarEvent.join(SEPARATOR);
-
-      calendarEvents.push(calendarEvent);
-      return calendarEvent;
-    },
-
-    /**
-     * Download calendar using the saveAs function from filesave.js
-     * @param  {string} filename Filename
-     * @param  {string} ext      Extention
-     */
-    'download': function(filename, ext) {
-      if (calendarEvents.length < 1) {
-        return false;
-      }
-
-      ext = (typeof ext !== 'undefined') ? ext : '.ics';
-      filename = (typeof filename !== 'undefined') ? filename : 'calendar';
-      var calendar = calendarStart + SEPARATOR + calendarEvents.join(SEPARATOR) + calendarEnd;
-
-      var blob;
-      if (navigator.userAgent.indexOf('MSIE 10') === -1) { // chrome or firefox
-        blob = new Blob([calendar]);
-      } else { // ie
-        var bb = new BlobBuilder();
-        bb.append(calendar);
-        blob = bb.getBlob('text/x-vCalendar;charset=' + document.characterSet);
-      }
-      saveAs(blob, filename + ext);
-      return calendar;
-    },
-
-    /**
-     * Build and return the ical contents
-     */
-    'build': function() {
-      if (calendarEvents.length < 1) {
-        return false;
-      }
-
-      var calendar = calendarStart + SEPARATOR + calendarEvents.join(SEPARATOR) + calendarEnd;
-
-      return calendar;
-    }
+  /**
+   * Returns events array
+   * @return {array} Events
+   */
+  this.events = function () {
+    return this.calendarEvents;
   };
+
+  /**
+   * Returns calendar
+   * @return {string} Calendar in iCalendar format
+   */
+  this.calendar = function () {
+    return this.calendarStart + SEPARATOR + this.calendarEvents.join(SEPARATOR) + SEPARATOR + this.calendarEnd;
+  };
+
+  /**
+   * Add event to the calendar
+   * @param  {string} subject     Subject/Title of event
+   * @param  {string} description Description of event
+   * @param  {string} location    Location of event
+   * @param  {mixed}  day         Beginning date of event
+   * @param  {object} rules       Repeat rules
+   * @param  {object} custom_fields Custom fields
+   */
+  this.addAllDayEvent = function (subject, description, location, day, rules, custom_fields) {
+    return this.addEvent(subject, description, location, true, day, day, rules, custom_fields);
+  };
+
+  /**
+   * Add event to the calendar
+   * @param  {string} subject     Subject/Title of event
+   * @param  {string} description Description of event
+   * @param  {string} location    Location of event
+   * @param  {boolean} isFullDay Is full day event
+   * @param  {mixed} start       Beginning date of event
+   * @param  {mixed} end        Ending date of event
+   * @param  {object} rules       Repeat rules
+   * @param  {object} custom_fields Custom fields
+   */
+  this.addEvent = function (subject, description, location, isFullDay, start, end, rules, custom_fields) {
+    if (!subject || !description || !location || !start || !end) {
+      return false;
+    }
+
+    let format = isFullDay ? "YYYYMMDD" : "YYYYMMDDTHHmmss";
+    let date_value = isFullDay ? "DATE" : "DATE-TIME";
+    let sstart = moment(start).format(format);
+    let send = moment(end).format(format);
+    let snow = moment().format("YYYYMMDDTHHmmss");
+
+    var calendarEvent = [
+      "BEGIN:VEVENT",
+      `UID:${this.calendarEvents.length}@${this.uidDomain}`,
+      "CLASS:PUBLIC",
+      `DESCRIPTION:${description}`,
+      `DTSTAMP;VALUE=DATE-TIME:${snow}`,
+      `DTSTART;VALUE=${date_value}:${sstart}`,
+      `DTEND;VALUE=${date_value}:${send}`,
+      `LOCATION:${location}`,
+      `SUMMARY;LANGUAGE=en-us:${subject}`,
+      "TRANSP:TRANSPARENT",
+    ];
+
+    if (rules ) {
+      rules = this._validate_repeat_rules(rules);
+      calendarEvent.splice(4, 0, this._compose_repeat_rules(rules));
+    }
+
+    if (custom_fields) {
+      for (const key in custom_fields) {
+        if (custom_fields.hasOwnProperty(key)) {
+          calendarEvent.push(`${key.toUpperCase()}:${custom_fields[key]}`);
+        }
+      }
+    }
+
+    calendarEvent.push("END:VEVENT");
+
+    this.calendarEvents.push(calendarEvent.join(SEPARATOR));
+    return calendarEvent;
+  };
+
+  /**
+   * Download calendar using the saveAs function from filesave.js
+   * @param  {string} filename Filename
+   * @param  {string} ext      Extention
+   */
+  this.download = function (filename, ext) {
+    let calendar = this.build();
+    if (!calendar) {
+      return null;
+    }
+
+    ext = ext ?? "ics";
+    filename = filename ?? "calendar";
+
+    let blob = new Blob([calendar], {
+      type: 'text/x-vCalendar;charset=UFT-8',
+    });
+    let link = document.createElement("a");
+    link.href = window.URL.createObjectURL(blob);
+    link.setAttribute("download", `${filename}.${ext}`);
+    link.click();
+    return calendar;
+  };
+
+  /**
+   * Build and return the ical contents
+   */
+  this.build = function () {
+    if (this.calendarEvents.length === 0) {
+      return null;
+    }
+
+    return this.calendar();
+  };
+
+  this._validate_repeat_rules = function (rrule) {
+    if (RRULE_FREQ.indexOf(rrule.rrule) === -1) {
+      throw new Error("Recurrence rrule frequency must be provided and be one of the following: " + RRULE_FREQ.join(", "));
+    }
+
+    if (rrule.until && isNaN(Date.parse(rrule.until))) {
+      throw new Error("Recurrence rrule 'until' must be a valid date string");
+    }
+
+    if (rrule.interval && isNaN(parseInt(rrule.interval))) {
+      throw new Error("Recurrence rrule 'interval' must be an integer");
+    }
+
+    if (rrule.count && isNaN(parseInt(rrule.count))) {
+      throw new Error("Recurrence rrule 'count' must be an integer");
+    }
+
+    if (rrule.byday) {
+      if (!Array.isArray(rrule.byday)) {
+        throw new Error("Recurrence rrule 'byday' must be an array");
+      }
+
+      if (rrule.byday.length > 7) {
+        throw new Error("Recurrence rrule 'byday' array must not be longer than the 7 days in a week");
+      }
+
+      // Filter any possible repeats
+      rrule.byday = rrule.byday.filter((elem, pos) => rrule.byday.indexOf(elem) == pos);
+
+      for (let b of  rrule.byday) {
+        if (BYDAY_VALUES.indexOf(b) === -1) {
+          throw new Error("Recurrence rrule 'byday' values must include only the following: 'SU', 'MO', 'TU', 'WE', 'TH', 'FR', 'SA'");
+        }
+      }
+    }
+    return rrule;
+  };
+
+  this._compose_repeat_rules = function(rrule) {
+    let rruleString;
+    if (rrule.rrule) {
+      return rrule.rrule;
+    } else {
+      rruleString = `rrule:FREQ=${rrule.freq}`;
+
+      if (rrule.until) {
+        rruleString += `;UNTIL=${moment(rrule.until).format('YYYYMMDD[000000Z]')}`;
+      }
+
+      if (rrule.interval) {
+        rruleString += `;INTERVAL=${rrule.interval}`;
+      }
+
+      if (rrule.count) {
+        rruleString += `;COUNT=${rrule.count}`;
+      }
+
+      if (rrule.byday && rrule.byday.length > 0) {
+        rruleString += `;BYDAY=${rrule.byday.join(",")}`;
+      }
+      return rruleString;
+    }
+  }
 };

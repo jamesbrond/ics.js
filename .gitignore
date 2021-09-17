@@ -1,3 +1,5 @@
 node_modules/
-bower_components/
-.DS_Store
+test/
+.yarnrc
+yarn-error.log
+yarn.lock
