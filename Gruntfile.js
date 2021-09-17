@@ -18,7 +18,7 @@ module.exports = function(grunt) {
       dist: {
         files: {
           'dist/ics.min.js': ['ics.js'],
-          'dist/ics.deps.min.js': ['ics.deps.min.js']
+          'dist/ics.deps.min.js': ['dist/ics.deps.min.js']
         }
       }
     },
